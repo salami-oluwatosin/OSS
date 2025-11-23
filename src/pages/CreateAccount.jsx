@@ -5,53 +5,60 @@ import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import Paper from '@mui/material/Paper'
-import { useDonation } from '../context/DonationContext' 
 import API_BASE_URL from '../config/Apibaseurl'
 
-export default function Login() {
+export default function Register() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [status, setStatus] = useState('')
-
-  const nav = useNavigate()
-  const { login } = useDonation()
+  const [success, setSuccess] = useState('')
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    setStatus('')
+    setSuccess('')
 
     try {
-      setStatus('Logging in...')
-
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           username: username.trim(),
-          password: password.trim(),
-        }),
+          password: password.trim()
+        })
       })
 
       const data = await response.json()
-      console.log('Response status:', response.status)
-      console.log('Response data:', data)
 
       if (response.ok && data.token) {
-        setStatus('Login successful! Redirecting...')
-        login(data.token)                    
-        nav('/admin', { replace: true })
+        localStorage.setItem('token', data.token)
+        setSuccess('Account created! Taking you to login...')
+        setTimeout(() => navigate('/login'), 1500)
       } else {
-        setError(data.message || 'Invalid username or password')
-        setStatus('')
+        setError(data.message || 'Registration failed')
       }
     } catch (err) {
-      console.error('Login error:', err)
-      setError('Cannot reach backend')
-      setStatus('')
+      console.error('Full error details:', err)
+      setError(`Network error: ${err.message}. Is backend reachable? Check console.`)
+    }
+  }
+
+
+  const testAPI = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: 'debug', password: 'debug' })
+      })
+      console.log('Status:', res.status, 'Response:', await res.text())
+      alert(`Status: ${res.status} - Check console for details`)
+    } catch (e) {
+      console.error('Test failed:', e)
+      alert(`Error: ${e.message}`)
     }
   }
 
@@ -59,9 +66,8 @@ export default function Login() {
     <Box display="flex" justifyContent="center" alignItems="center" minHeight="70vh">
       <Paper elevation={4} sx={{ p: { xs: 3, sm: 5 }, maxWidth: 420, width: '100%' }}>
         <Typography variant="h5" align="center" fontWeight={700} gutterBottom>
-          Admin Login
+          Create Account
         </Typography>
-
         <Box component="form" onSubmit={handleSubmit}>
           <TextField
             fullWidth
@@ -81,18 +87,8 @@ export default function Login() {
             margin="normal"
             required
           />
-
-          {error && (
-            <Typography color="error" sx={{ mt: 2 }}>
-              {error}
-            </Typography>
-          )}
-          {status && (
-            <Typography sx={{ mt: 2, fontWeight: 500 }}>
-              {status}
-            </Typography>
-          )}
-
+          {error && <Typography color="error" sx={{ mt: 1 }}>{error}</Typography>}
+          {success && <Typography color="success.main" sx={{ mt: 1, fontWeight: 500 }}>{success}</Typography>}
           <Button
             fullWidth
             variant="contained"
@@ -100,18 +96,16 @@ export default function Login() {
             size="large"
             sx={{ mt: 3, py: 1.4, fontWeight: 600 }}
           >
-            Login
+            Create Account
           </Button>
-
+          <Button onClick={testAPI} variant="outlined" fullWidth sx={{ mt: 2 }}>
+            Test API Reachability
+          </Button>
           <Typography variant="body2" align="center" sx={{ mt: 3 }}>
-            Don't have an account?{' '}
-            <Link to="/register" style={{ color: '#1976d2', textDecoration: 'none' }}>
-              Create Account
+            Already have an account?{' '}
+            <Link to="/login" style={{ color: '#1976d2', textDecoration: 'none' }}>
+              Login here
             </Link>
-          </Typography>
-
-          <Typography variant="caption" display="block" align="center" sx={{ mt: 2, color: 'text.secondary' }}>
-            Hint: username <b>basit</b> • password <b>basit12</b>
           </Typography>
         </Box>
       </Paper>

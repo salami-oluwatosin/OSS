@@ -1,33 +1,37 @@
-import React, { createContext, useContext, useState, useMemo } from 'react'
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react'
 
 const DonationContext = createContext(null)
 
-export function DonationProvider({ children }){
+export function DonationProvider({ children }) {
   const [isAdmin, setIsAdmin] = useState(false)
-  const [donations, setDonations] = useState([]) // {id, donor, item, quantity, category, date}
-  const [distributions, setDistributions] = useState([]) // {id, item, recipient, quantity, date}
+  const [donations, setDonations] = useState([])
+  const [distributions, setDistributions] = useState([])
 
-  function login(password){
-    // Simple local auth for prototype; replace with secure auth in prod
-    if(password === 'admin'){
-      setIsAdmin(true)
-      return true
-    }
-    return false
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (token) setIsAdmin(true)
+  }, [])
+
+  const login = (token) => {
+    localStorage.setItem('token', token)
+    setIsAdmin(true)
   }
-  function logout(){ setIsAdmin(false) }
 
-  function addDonation(d){
+  const logout = () => {
+    localStorage.removeItem('token')
+    setIsAdmin(false)
+  }
+
+  const addDonation = (d) => {
     const id = Date.now().toString()
     setDonations(prev => [...prev, { ...d, id }])
   }
 
-  function addDistribution(dist){
+  const addDistribution = (dist) => {
     const id = Date.now().toString()
     setDistributions(prev => [...prev, { ...dist, id }])
   }
 
-  // Summary calculations
   const summary = useMemo(() => {
     const receivedByItem = {}
     donations.forEach(d => {
@@ -37,7 +41,7 @@ export function DonationProvider({ children }){
     distributions.forEach(s => {
       distributedByItem[s.item] = (distributedByItem[s.item] || 0) + Number(s.quantity)
     })
-    const items = Object.keys({...receivedByItem, ...distributedByItem})
+    const items = Object.keys({ ...receivedByItem, ...distributedByItem })
     const rows = items.map(item => ({
       item,
       received: receivedByItem[item] || 0,
@@ -47,11 +51,11 @@ export function DonationProvider({ children }){
     return { rows }
   }, [donations, distributions])
 
-  function exportCSV(){
+  const exportCSV = () => {
     const headers = ['type','id','donor_or_recipient','item','quantity','category','date']
     const rows = [headers.join(',')]
-    donations.forEach(d => rows.push(['donation', d.id, d.donor, d.item, d.quantity, d.category, d.date].map(v => `"${String(v).replace(/\"/g,'""')}"`).join(',')))
-    distributions.forEach(s => rows.push(['distribution', s.id, s.recipient, s.item, s.quantity, '', s.date].map(v => `"${String(v).replace(/\"/g,'""')}"`).join(',')))
+    donations.forEach(d => rows.push(['donation', d.id, d.donor, d.item, d.quantity, d.category, d.date].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')))
+    distributions.forEach(s => rows.push(['distribution', s.id, s.recipient, s.item, s.quantity, '', s.date].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')))
     const csv = rows.join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
@@ -66,17 +70,23 @@ export function DonationProvider({ children }){
 
   return (
     <DonationContext.Provider value={{
-      isAdmin, login, logout,
-      donations, distributions, addDonation, addDistribution,
-      summary, exportCSV
+      isAdmin,
+      login,
+      logout,
+      donations,
+      distributions,
+      addDonation,
+      addDistribution,
+      summary,
+      exportCSV
     }}>
       {children}
     </DonationContext.Provider>
   )
 }
 
-export function useDonation(){
+export function useDonation() {
   const ctx = useContext(DonationContext)
-  if(!ctx) throw new Error('useDonation must be used within DonationProvider')
+  if (!ctx) throw new Error('useDonation must be used within DonationProvider')
   return ctx
 }
