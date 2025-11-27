@@ -5,12 +5,12 @@ import {
   Typography,
   TextField,
   Button,
-  MenuItem,
   CircularProgress,
   Alert,
   Autocomplete,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useDonation } from '../context/DonationContext';
 import API_BASE_URL from '../config/Apibaseurl';
 
 export default function DistributionForm() {
@@ -21,13 +21,12 @@ export default function DistributionForm() {
     quantity: '',
     dateGiven: new Date().toISOString().split('T')[0],
   });
-
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
   const navigate = useNavigate();
+  const { refreshSummary } = useDonation();
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -36,15 +35,18 @@ export default function DistributionForm() {
       return;
     }
 
-    const fetchInventory = async () => {
+    const loadInventory = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/inventory`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
         if (res.ok) {
+          const data = await res.json();
           const available = data.filter(i => i.remaining > 0);
-          setItems(available.map(i => ({ label: `${i.itemName} (Remaining: ${i.remaining})`, value: i.itemName })));
+          setItems(available.map(i => ({
+            label: `${i.itemName} (Remaining: ${i.remaining})`,
+            value: i.itemName
+          })));
         }
       } catch (err) {
         setError('Failed to load inventory');
@@ -52,17 +54,16 @@ export default function DistributionForm() {
         setFetching(false);
       }
     };
-
-    fetchInventory();
+    loadInventory();
   }, [token, navigate]);
+
+  const handleItemChange = (event, newValue) => {
+    setFormData(prev => ({ ...prev, itemName: newValue ? newValue.value : '' }));
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleItemChange = (event, newValue) => {
-    setFormData(prev => ({ ...prev, itemName: newValue ? newValue.value : '' }));
   };
 
   const handleSubmit = async (e) => {
@@ -86,8 +87,6 @@ export default function DistributionForm() {
         }),
       });
 
-      const data = await res.json();
-
       if (res.ok) {
         setSuccess('Distribution recorded successfully!');
         setFormData({
@@ -96,8 +95,10 @@ export default function DistributionForm() {
           quantity: '',
           dateGiven: new Date().toISOString().split('T')[0],
         });
+        refreshSummary();
         setTimeout(() => navigate('/admin'), 1500);
       } else {
+        const data = await res.json();
         setError(data.message || 'Failed to record distribution');
       }
     } catch (err) {
@@ -109,7 +110,7 @@ export default function DistributionForm() {
 
   if (fetching) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '70vh' }}>
         <CircularProgress />
       </Box>
     );
@@ -126,14 +127,12 @@ export default function DistributionForm() {
           <Autocomplete
             options={items}
             onChange={handleItemChange}
-            renderInput={(params) => (
-              <TextField {...params} label="Item Name" required />
-            )}
+            renderInput={(params) => <TextField {...params} label="Select Item" required />}
             noOptionsText="No items with remaining stock"
           />
 
           <TextField
-            label="Recipient (e.g. Community B, Orphanage, Individual)"
+            label="Recipient"
             name="recipient"
             value={formData.recipient}
             onChange={handleChange}
@@ -174,7 +173,7 @@ export default function DistributionForm() {
             variant="contained"
             size="large"
             fullWidth
-            disabled={loading || !formData.itemName}
+            disabled={loading || !formData.itemName || !formData.quantity || !formData.recipient}
             sx={{
               mt: 4,
               py: 2,
@@ -187,12 +186,7 @@ export default function DistributionForm() {
             {loading ? <CircularProgress size={28} color="inherit" /> : 'Record Distribution'}
           </Button>
 
-          <Button
-            variant="text"
-            fullWidth
-            onClick={() => navigate('/admin')}
-            sx={{ mt: 2 }}
-          >
+          <Button variant="text" fullWidth onClick={() => navigate('/admin')} sx={{ mt: 2 }}>
             Back to Dashboard
           </Button>
         </Box>

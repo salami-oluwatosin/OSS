@@ -1,44 +1,196 @@
-import React, { useState } from 'react'
-import Box from '@mui/material/Box'
-import TextField from '@mui/material/TextField'
-import Button from '@mui/material/Button'
-import Paper from '@mui/material/Paper'
-import Typography from '@mui/material/Typography'
-import { useDonation } from '../context/DonationContext'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  CircularProgress,
+  Alert,
+  Autocomplete,
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { useDonation } from '../context/DonationContext';
+import API_BASE_URL from '../config/Apibaseurl';
 
-export default function DistributionForm(){
-  const [recipient, setRecipient] = useState('')
-  const [item, setItem] = useState('')
-  const [quantity, setQuantity] = useState(1)
-  const [date, setDate] = useState(new Date().toISOString().slice(0,10))
-  const { addDistribution, summary } = useDonation()
-  const nav = useNavigate()
+export default function DistributionForm() {
+  const [items, setItems] = useState([]);
+  const [formData, setFormData] = useState({
+    itemName: '',
+    recipient: '',
+    quantity: '',
+    dateGiven: new Date().toISOString().split('T')[0],
+  });
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const navigate = useNavigate();
+  const { refreshSummary } = useDonation();
+  const token = localStorage.getItem('token');
 
-  function submit(e){
-    e.preventDefault()
-    // Basic check: ensure remaining >= quantity if possible
-    const row = summary.rows.find(r => r.item === item)
-    if(row && row.remaining < Number(quantity)){
-      alert('Not enough remaining quantity for this item')
-      return
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+      return;
     }
-    addDistribution({ recipient, item, quantity, date })
-    nav('/admin')
+
+    const loadInventory = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/inventory`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const available = data.filter(i => i.remaining > 0);
+          setItems(available.map(i => ({
+            label: `${i.itemName} (Remaining: ${i.remaining})`,
+            value: i.itemName
+          })));
+        }
+      } catch (err) {
+        setError('Failed to load inventory');
+      } finally {
+        setFetching(false);
+      }
+    };
+    loadInventory();
+  }, [token, navigate]);
+
+  const handleItemChange = (event, newValue) => {
+    setFormData(prev => ({ ...prev, itemName: newValue ? newValue.value : '' }));
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/distributions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          itemName: formData.itemName,
+          recipient: formData.recipient.trim(),
+          quantity: parseInt(formData.quantity),
+          dateGiven: formData.dateGiven,
+        }),
+      });
+
+      if (res.ok) {
+        setSuccess('Distribution recorded successfully!');
+        setFormData({
+          itemName: '',
+          recipient: '',
+          quantity: '',
+          dateGiven: new Date().toISOString().split('T')[0],
+        });
+        refreshSummary();
+        setTimeout(() => navigate('/admin'), 1500);
+      } else {
+        const data = await res.json();
+        setError(data.message || 'Failed to record distribution');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (fetching) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '70vh' }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-      <Paper elevation={3} sx={{ p: { xs: 2, sm: 4 }, maxWidth: 500, width: '100%' }}>
-        <Typography variant="h6" fontWeight={700} gutterBottom align="center">Record Distribution</Typography>
-        <Box component="form" onSubmit={submit}>
-          <TextField label="Recipient" fullWidth required value={recipient} onChange={e=>setRecipient(e.target.value)} sx={{ mb:2 }} />
-          <TextField label="Item Name" fullWidth required value={item} onChange={e=>setItem(e.target.value)} sx={{ mb:2 }} />
-          <TextField label="Quantity" type="number" fullWidth required value={quantity} onChange={e=>setQuantity(e.target.value)} sx={{ mb:2 }} inputProps={{ min: 1 }} />
-          <TextField label="Date Given" type="date" fullWidth value={date} onChange={e=>setDate(e.target.value)} sx={{ mb:2 }} InputLabelProps={{ shrink: true }} />
-          <Button fullWidth variant="contained" type="submit" sx={{ mt: 1.5, py: 1.2, fontWeight: 600 }}>Record Distribution</Button>
+    <Box sx={{ maxWidth: 600, mx: 'auto', mt: { xs: 4, md: 8 }, px: 2 }}>
+      <Paper elevation={6} sx={{ p: { xs: 4, md: 6 } }}>
+        <Typography variant="h4" fontWeight={700} align="center" gutterBottom>
+          Record Distribution
+        </Typography>
+
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 4 }}>
+          <Autocomplete
+            options={items}
+            onChange={handleItemChange}
+            renderInput={(params) => <TextField {...params} label="Select Item" required />}
+            noOptionsText="No items with remaining stock"
+          />
+
+          <TextField
+            label="Recipient"
+            name="recipient"
+            value={formData.recipient}
+            onChange={handleChange}
+            fullWidth
+            required
+            margin="normal"
+          />
+
+          <TextField
+            label="Quantity Distributed"
+            name="quantity"
+            type="number"
+            value={formData.quantity}
+            onChange={handleChange}
+            fullWidth
+            required
+            InputProps={{ inputProps: { min: 1 } }}
+            margin="normal"
+          />
+
+          <TextField
+            label="Date Given"
+            name="dateGiven"
+            type="date"
+            value={formData.dateGiven}
+            onChange={handleChange}
+            fullWidth
+            required
+            InputLabelProps={{ shrink: true }}
+            margin="normal"
+          />
+
+          {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mt: 2 }}>{success}</Alert>}
+
+          <Button
+            type="submit"
+            variant="contained"
+            size="large"
+            fullWidth
+            disabled={loading || !formData.itemName || !formData.quantity || !formData.recipient}
+            sx={{
+              mt: 4,
+              py: 2,
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              bgcolor: '#c62828',
+              '&:hover': { bgcolor: '#b71c1c' },
+            }}
+          >
+            {loading ? <CircularProgress size={28} color="inherit" /> : 'Record Distribution'}
+          </Button>
+
+          <Button variant="text" fullWidth onClick={() => navigate('/admin')} sx={{ mt: 2 }}>
+            Back to Dashboard
+          </Button>
         </Box>
       </Paper>
     </Box>
-  )
+  );
 }
