@@ -25,6 +25,9 @@ import AboutUs from './pages/Aboutus';
 import DonateScreen from './pages/DonateScreen';
 import Programs from './pages/Programs';
 import Register from './pages/CreateAccount';
+import RecordDonation from './pages/RecordDonation';
+import RecordDistribution from './pages/DistributionForm';
+import ViewInventory from './pages/Inventory';
 
 export default function App() {
   const { isAdmin } = useDonation();
@@ -95,6 +98,9 @@ export default function App() {
         <Route path="/aboutus" element={<AboutUs />} />
         <Route path="/programs" element={<Programs />} />
         <Route path="/contact-donation" element={<ContactDonation />} />
+        <Route path="/record-donation" element={<RecordDonation />} />
+        <Route path="/record-distribution" element={<RecordDistribution />} />
+        <Route path="/view-inventory" element={<ViewInventory />} />        
         <Route path="*" element={<Typography variant="h3" align="center" mt={20}>404 - Page Not Found</Typography>} />
       </Routes>
     </>
