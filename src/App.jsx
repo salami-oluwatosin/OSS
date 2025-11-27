@@ -14,6 +14,7 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useDonation } from './context/DonationContext';
+
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import PublicDashboard from './pages/PublicDashboard';
@@ -21,13 +22,21 @@ import ContactDonation from './pages/ContactDonation';
 import DistributionForm from './pages/DistributionForm';
 import Inventory from './pages/Inventory';
 import Reports from './pages/Reports';
-import AboutUs from './pages/Aboutus';
+import AboutUs from './pages/AboutUs';
 import DonateScreen from './pages/DonateScreen';
 import Programs from './pages/Programs';
 import Register from './pages/CreateAccount';
 import RecordDonation from './pages/RecordDonation';
 import RecordDistribution from './pages/DistributionForm';
 import ViewInventory from './pages/Inventory';
+
+const navLinkStyle = {
+  fontSize: '1.1rem',
+  fontWeight: 500,
+  color: 'black',
+  textDecoration: 'none',
+  '&:hover': { fontWeight: 700, textDecoration: 'underline' },
+};
 
 export default function App() {
   const { isAdmin } = useDonation();
@@ -100,17 +109,9 @@ export default function App() {
         <Route path="/contact-donation" element={<ContactDonation />} />
         <Route path="/record-donation" element={<RecordDonation />} />
         <Route path="/record-distribution" element={<RecordDistribution />} />
-        <Route path="/view-inventory" element={<ViewInventory />} />        
+        <Route path="/view-inventory" element={<ViewInventory />} />
         <Route path="*" element={<Typography variant="h3" align="center" mt={20}>404 - Page Not Found</Typography>} />
       </Routes>
     </>
   );
 }
-
-const navLinkStyle = {
-  fontSize: '1.1rem',
-  fontWeight: 500,
-  color: 'black',
-  textDecoration: 'none',
-  '&:hover': { fontWeight: 700, textDecoration: 'underline' },
-};

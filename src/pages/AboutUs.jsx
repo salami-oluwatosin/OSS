@@ -8,7 +8,6 @@ const features = [
   { title: 'Secure & Intuitive', description: 'Safe, intuitive interface for all users.' },
 ];
 
-
 const AboutUs = () => {
   return (
     <Box sx={{
@@ -18,7 +17,6 @@ const AboutUs = () => {
       borderRadius: 3,
       boxShadow: 2,
     }}>
-      {/* Intro */}
       <Typography variant="h3" gutterBottom sx={{ fontWeight: 700, color: '#222', mb: 2 }}>
         About Us
       </Typography>
@@ -26,11 +24,7 @@ const AboutUs = () => {
         Our mission is to make donation tracking simple and transparent for small organizations and school clubs.<br />
         With our app, every contribution is recorded, tracked, and visualized to help manage funds effectively.
       </Typography>
-
-      {/* Divider */}
       <Box sx={{ width: 80, height: 4, bgcolor: 'primary.main', borderRadius: 2, mx: 'auto', mb: 5 }} />
-
-      {/* Features */}
       <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: '#333', mb: 3 }}>
         What We Do
       </Typography>
@@ -49,14 +43,16 @@ const AboutUs = () => {
               flexDirection: 'column',
               justifyContent: 'center',
             }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}>{feature.title}</Typography>
-              <Typography variant="body2" sx={{ color: '#555' }}>{feature.description}</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}>
+                {feature.title}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#555' }}>
+                {feature.description}
+              </Typography>
             </Paper>
           </Grid>
         ))}
       </Grid>
-
-      {/* Closing Statement */}
       <Typography variant="subtitle1" sx={{ color: '#666', mt: 6, fontStyle: 'italic' }}>
         Together, we make every donation count.
       </Typography>
