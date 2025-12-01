@@ -8,21 +8,43 @@ import {
   Stack,
   Chip,
 } from '@mui/material';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDonation } from '../context/DonationContext';
 
 export default function AdminDashboard() {
-  const { summary } = useDonation();
+  const { summary, logout } = useDonation();
+  const navigate = useNavigate();
 
   const totalReceived = summary.rows.reduce((sum, r) => sum + r.received, 0);
   const totalDistributed = summary.rows.reduce((sum, r) => sum + r.distributed, 0);
   const totalRemaining = summary.rows.reduce((sum, r) => sum + r.remaining, 0);
 
+  const handleLogout = () => {
+    logout();           
+    navigate('/login');
+  };
+
   return (
     <Box sx={{ px: { xs: 2, md: 4 }, py: 4 }}>
-      <Typography variant="h4" fontWeight={800} sx={{ mb: 5, color: '#111' }}>
-        Admin Dashboard
-      </Typography>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 5 }}>
+        <Typography variant="h4" fontWeight={800} sx={{ color: '#111' }}>
+          Admin Dashboard
+        </Typography>
+
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={handleLogout}
+          sx={{
+            fontWeight: 600,
+            px: 3,
+            py: 1,
+          }}
+        >
+          Logout
+        </Button>
+      </Box>
 
       <Grid container spacing={4}>
         {/* Quick Stats */}
@@ -86,7 +108,6 @@ export default function AdminDashboard() {
             <Typography variant="h6" fontWeight={700} gutterBottom>
               Quick Actions
             </Typography>
-
             <Grid container spacing={3} sx={{ mt: 2 }}>
               <Grid item xs={12} sm={6}>
                 <Button
@@ -106,7 +127,6 @@ export default function AdminDashboard() {
                   + Record Donation
                 </Button>
               </Grid>
-
               <Grid item xs={12} sm={6}>
                 <Button
                   component={Link}
@@ -125,7 +145,6 @@ export default function AdminDashboard() {
                   - Record Distribution
                 </Button>
               </Grid>
-
               <Grid item xs={12} sm={6}>
                 <Button
                   component={Link}
@@ -144,7 +163,6 @@ export default function AdminDashboard() {
                   View Full Inventory
                 </Button>
               </Grid>
-
               <Grid item xs={12} sm={6}>
                 <Button
                   component={Link}
@@ -168,14 +186,12 @@ export default function AdminDashboard() {
           </Paper>
         </Grid>
 
-        {/* Live Summary */}
         <Grid item xs={12} lg={4}>
           <Paper sx={{ p: 4, height: '100%', borderRadius: 3, bgcolor: '#f8f9fa' }}>
             <Typography variant="h6" fontWeight={700} gutterBottom>
               Live Summary
               <Chip label="Top 5 Items" size="small" sx={{ ml: 1, bgcolor: '#e3f2fd' }} />
             </Typography>
-
             {summary.rows.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 8 }}>
                 <Typography color="text.secondary" variant="h6">
